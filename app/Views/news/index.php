@@ -16,6 +16,7 @@
             <thead>
                 <tr>
                     <th scope="col">Title</th>
+                    <th scope="col">Body</th>
                     <th scope="col">Action</th>
                 </tr>
             </thead>
@@ -29,16 +30,18 @@
 
 <script>
     $(document).ready(function () {
-    $('#news-table').DataTable({
-        processing: true,
-        serverSide: true,
-        ajax: {
-            url: "<?= route_to('news_datatables') ?>"
-        },
-        columns: [
+        showNews();
+    });
+
+    const showNews = () => {
+        const columns = [
             {
                 data: 'title',
                 name: 'title'
+            },
+            {
+                data: 'body',
+                name: 'body'
             },
             {
                 data: 'action',
@@ -46,8 +49,54 @@
                 orderable: false,
                 searchable: false
             }
-        ],
-    });
-});
+        ];
+
+        showDataTable('#news-table', "<?= route_to('news_datatables') ?>", columns)
+    }
+
+    const deleteNews = (id) => {
+        Swal.fire({
+            title: 'Apakah anda yakin?',
+            text: "untuk menghapus data tersebut!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                let route = `<?= base_url('news/') ?>` + id
+                ajaxRequest(null, route, 'DELETE')
+                    .then(({ messages }) => {
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: messages,
+                            icon: 'success',
+                        }).then(() => {
+                            showNews()
+                        })
+                    })
+                    .catch((e) => {
+                        if (typeof(e.responseJSON.messages) == 'object') {
+                            let textError = '';
+                            $.each(e.responseJSON.messages, function(key, value) {
+                                textError += `${value}<br>`
+                            });
+                            Swal.fire({
+                                title: 'Gagal!',
+                                html: textError,
+                                icon: 'error',
+                            })
+                        } else {
+                            Swal.fire({
+                                title: 'Gagal!',
+                                text: e.responseJSON.messages,
+                                icon: 'error',
+                            })
+                        }
+                    })
+            }
+        })
+    }
 </script>
 <?= $this->endSection(); ?>

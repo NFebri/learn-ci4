@@ -4,7 +4,7 @@
 <div class="row">
     <div class="col-lg-6">
         <h1 class="mb-3">Create News</h1>
-        <form action="<?= route_to('news_store') ?>" method="post">
+        <form action="<?= route_to('news_store') ?>" method="post" id="form-news">
             <?= csrf_field() ?>
             <div class="form-group">
                 <label for="title">Title</label>
@@ -29,4 +29,42 @@
     </div>
 </div>
 
+<?= $this->endSection(); ?>
+
+<?= $this->section('script'); ?>
+<script>
+    $(document).ready(function(){
+        $('#form-news').on('submit', function(e){
+            e.preventDefault();
+            ajaxRequest($(this).serialize(), $(this).attr('action'), 'POST')
+                .then(({ messages }) => {
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: messages,
+                        icon: 'success',
+                    }).then(() => {
+                        window.location.href = "<?= route_to('news_index') ?>"
+                    })
+                }).catch((e) => {
+                    if (typeof(e.responseJSON.messages) == 'object') {
+                        let textError = '';
+                        $.each(e.responseJSON.messages, function(key, value) {
+                            textError += `${value}<br>`
+                        });
+                        Swal.fire({
+                            title: 'Gagal!',
+                            html: textError,
+                            icon: 'error',
+                        })
+                    } else {
+                        Swal.fire({
+                            title: 'Gagal!',
+                            text: e.responseJSON.messages,
+                            icon: 'error',
+                        })
+                    }
+                })
+        });
+    })
+</script>
 <?= $this->endSection(); ?>

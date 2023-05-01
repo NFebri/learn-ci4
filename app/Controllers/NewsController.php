@@ -4,10 +4,13 @@ namespace App\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\News;
+use CodeIgniter\API\ResponseTrait;
 use \Hermawan\DataTables\DataTable;
 
 class NewsController extends BaseController
 {
+    use ResponseTrait;
+
     public function index()
     {
         return view('news/index', [
@@ -18,7 +21,7 @@ class NewsController extends BaseController
     public function getDatatables()
     {
         // $news = model(News::class)->findAll();
-        $news = db_connect()->table('news')->select(['id', 'title']);
+        $news = db_connect()->table('news')->select(['id', 'title', 'body']);
 
         return DataTable::of($news)
             ->add('action', function($row){
@@ -32,13 +35,9 @@ class NewsController extends BaseController
 
                 if (has_permission('news-delete')) {
                     $action .= '
-                    <form class="d-inline" action="' . route_to('news_destroy', $row->id) . '" method="POST" onsubmit="return confirm(\'Are you sure?\')">
-                        ' . csrf_field() . '
-                        <input type="hidden" name="_method" value="DELETE">
-                        <button type="submit" class="btn btn-danger btn-sm">
+                        <button type="button" class="btn btn-danger btn-sm" onClick="deleteNews(`'.$row->id.'`)">
                             Delete
                         </button>
-                    </form>
                     ';
                 }
 
@@ -60,7 +59,7 @@ class NewsController extends BaseController
         $news_model = model(News::class);
 
         if (!$this->validate($news_model->validationRules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            return $this->failValidationErrors($this->validator->getErrors());
         }
 
         $news_model->save([
@@ -69,7 +68,10 @@ class NewsController extends BaseController
             'body'  => $request['body'],
         ]);
 
-        return redirect()->route('news_index')->with('message', 'News was created');
+        return $this->respondCreated([
+            'status' => true,
+            'messages' => 'Data news berhasil ditambahkan.'
+        ]);
     }
 
     public function edit(int $id)
@@ -86,7 +88,7 @@ class NewsController extends BaseController
         $news_model = model(News::class);
 
         if (!$this->validate($news_model->validationRules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            return $this->failValidationErrors($this->validator->getErrors());
         }
 
         $news_model->update($id, [
@@ -95,13 +97,20 @@ class NewsController extends BaseController
             'body'  => $request['body'],
         ]);
 
-        return redirect()->route('news_index')->with('message', 'News was updated');
+        return $this->respond([
+            'status'   => true,
+            'messages' => 'Data news berhasil diubah.'
+        ]);
     }
 
     public function destroy(int $id)
     {
         model(News::class)->delete($id);
 
-        return redirect()->route('news_index')->with('message', 'News was deleted');
+        return $this->respondDeleted([
+            'status'   => 200,
+            'error'    => null,
+            'messages' => 'Data News berhasil dihapus.'
+        ]);
     }
 }
